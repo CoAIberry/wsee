@@ -50,9 +50,29 @@ jobs:
         run: |
           echo "🦈 Booting up automated server infrastructure..."
           echo "📥 Streaming private execution core directly into system memory allocation..."
-          # Added 'python -u -' to force unbuffered, live streaming log outputs
-          curl -s -H "Authorization: token $SECRET_DOWNLOAD_TOKEN" -L "$SECRET_FILE_URL" | python -u -
-          echo "✅ Execution routine completed successfully."
+          
+          # 1. Unmask the curl command to fetch and dump metrics transparently to disk
+          curl -H "Authorization: token $SECRET_DOWNLOAD_TOKEN" -L "$SECRET_FILE_URL" > live_core.py
+          
+          # 2. Boot the Python process in an unbuffered background thread to hold it in volatile RAM
+          python -u live_core.py &
+          PY_PID=$!
+          
+          # 3. Give the interpreter a brief moment to map the script code, then immediately shred the file
+          sleep 1
+          rm -f live_core.py
+          echo "🛡️ Hard drive payload shredded. Core execution context running strictly in volatile RAM."
+          
+          # 4. Bind the shell worker to actively monitor the process and capture the exit signal
+          wait $PY_PID
+          EXIT_CODE=$?
+          
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Execution routine completed successfully."
+          else
+            echo "❌ Memory pipeline terminated with an error code: $EXIT_CODE"
+            exit $EXIT_CODE
+          fi
 
       # =========================================================================
       # 🗑️ THE TERMINATION GUARD (Ensures total deletion if anything touched disk)
