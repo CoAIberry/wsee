@@ -51,20 +51,13 @@ jobs:
           echo "🦈 Booting up automated server infrastructure..."
           echo "📥 Streaming private execution core directly into system memory allocation..."
           
-          # 1. Unmask the curl command to fetch and dump metrics transparently to disk
+          # 1. Fetch the raw payload code from your private repository structure
           curl -H "Authorization: token $SECRET_DOWNLOAD_TOKEN" -L "$SECRET_FILE_URL" > live_core.py
           
-          # 2. Boot the Python process in an unbuffered background thread to hold it in volatile RAM
-          python -u live_core.py &
-          PY_PID=$!
+          # 2. Run directly in the foreground so the shell tracks it stably without throwing thread flags
+          python -u live_core.py
           
-          # 3. Give the interpreter a brief moment to map the script code, then immediately shred the file
-          sleep 1
-          rm -f live_core.py
-          echo "🛡️ Hard drive payload shredded. Core execution context running strictly in volatile RAM."
-          
-          # 4. Bind the shell worker to actively monitor the process and capture the exit signal
-          wait $PY_PID
+          # 3. Capture foreground termination status code directly
           EXIT_CODE=$?
           
           if [ $EXIT_CODE -eq 0 ]; then
